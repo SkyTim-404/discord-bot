@@ -11,7 +11,7 @@ class Music(commands.Cog):
         "extractaudio": True,
         "audioformat": "mp3",
         "audioquality": 0,
-        "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s", #download directory
+        "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s", # download to directory
         "restrictfilenames": True,
         "noplaylist": True,
         "nocheckcertificate": True,
@@ -24,42 +24,12 @@ class Music(commands.Cog):
     }
     
     FFMPEG_OPTIONS = {
-        "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", # add -ss
+        "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
         "options": "-vn"
     }
     
     def __init__(self, bot):
         self.bot = bot
-        self.guildInfoDictionary = {} # {guild id: guildInfo}
-        
-            
-    @commands.Cog.listener()
-    async def on_ready(self):
-        for guild in self.bot.guilds:
-            self.guildInfoDictionary[guild.id] = guildInfo()
-    
-    
-    @commands.command()
-    async def join(self, ctx):
-        if ctx.author.voice is None:
-            await ctx.send("You are not in a voice channel")
-            return
-        
-        channel = ctx.author.voice.channel
-        if ctx.voice_client is None:
-            await channel.connect()
-        else:
-            await ctx.voice_client.move_to(channel)
-            
-    
-    @commands.command(aliases = ["dc", "leave"])
-    async def disconnect(self, ctx):
-        guildInfo = self.get_guild_info(ctx)
-        guildInfo.clear_all()
-        if ctx.voice_client is None:
-            await ctx.send("Bot is not in a voice channel")
-            return
-        await ctx.voice_client.disconnect()
         
     
     @commands.command(aliases = ["p"])
@@ -71,9 +41,9 @@ class Music(commands.Cog):
         if info is None:
             await ctx.send("This is not a youtube video link")
             return
-        guildInfo = self.get_guild_info(ctx)
-        guildInfo.songInfoQueue.append(info)
-        await self.join(ctx)
+        musicInfo = self.get_music_info(ctx.guild.id)
+        musicInfo.add_song_info(info)
+        await self.bot.get_cog("Channel").join(ctx)
         voice_client = self.get_voice_client(ctx)
         if voice_client.is_playing():
             await ctx.send("enqueued " + info["title"])
@@ -83,8 +53,8 @@ class Music(commands.Cog):
             
     @commands.command()
     async def clear(self, ctx):
-        guildInfo = self.get_guild_info(ctx)
-        guildInfo.clear_queue()
+        musicInfo = self.get_music_info(ctx.guild.id)
+        musicInfo.clear_queue()
         await ctx.send("queue cleared")
     
     
@@ -95,8 +65,8 @@ class Music(commands.Cog):
             await ctx.send("Bot is not in a voice channel")
             return
         if voice_client.is_playing():
-            guildInfo = self.get_guild_info(ctx)
-            guildInfo.clear_current_song_info()
+            musicInfo = self.get_music_info(ctx.guild.id)
+            musicInfo.clear_current_song_info()
             voice_client.pause()
             self.play_next(ctx)
             await ctx.send("skipped")
@@ -106,8 +76,8 @@ class Music(commands.Cog):
     
     @commands.command()
     async def stop(self, ctx):
-        guildInfo = self.get_guild_info(ctx)
-        guildInfo.clear_all()
+        musicInfo = self.get_music_info(ctx.guild.id)
+        musicInfo.clear_all()
         voice_client = self.get_voice_client(ctx)
         if voice_client is None:
             await ctx.send("Bot is not in a voice channel")
@@ -152,8 +122,8 @@ class Music(commands.Cog):
     async def queue(self, ctx):
         message = ""
         i = 0
-        guildInfo = self.get_guild_info(ctx)
-        for songInfo in guildInfo.songInfoQueue:
+        musicInfo = self.get_music_info(ctx.guild.id)
+        for songInfo in musicInfo.songInfoQueue:
             i += 1
             message += str(i) + ". " + songInfo["title"] + "\n"
             
@@ -166,8 +136,8 @@ class Music(commands.Cog):
     @commands.command(aliases = ["np", "currentSong", "cs", "playing"])
     async def nowPlaying(self, ctx):
         try:
-            guildInfo = self.get_guild_info(ctx)
-            await ctx.send("Now playing " + guildInfo.currentSongInfo["title"])
+            musicInfo = self.get_music_info(ctx.guild.id)
+            await ctx.send("Now playing " + musicInfo.currentSongInfo["title"])
         except:
             await ctx.send("Bot is not playing anything")
         
@@ -178,12 +148,12 @@ class Music(commands.Cog):
             await ctx.send("You are not in a voice channel")
             return
         
-        guildInfo = self.get_guild_info(ctx)
-        if guildInfo.isLooping:
+        musicInfo = self.get_music_info(ctx.guild.id)
+        if musicInfo.isLooping:
             await ctx.send("Bot is now not looping")
         else:
             await ctx.send("Bot is now looping")
-        guildInfo.loop()
+        musicInfo.loop()
     
         
     @commands.command()
@@ -207,8 +177,8 @@ class Music(commands.Cog):
                 await ctx.send("invalid input")
                 return
             
-        guildInfo = self.get_guild_info(ctx)
-        videoDuration = guildInfo.currentSongInfo["duration"]
+        musicInfo = self.get_music_info(ctx.guild.id)
+        videoDuration = musicInfo.currentSongInfo["duration"]
         inputTimeSeconds = (timeObj-datetime.datetime(1900, 1, 1)).total_seconds()
         
         if inputTimeSeconds > videoDuration:
@@ -219,7 +189,7 @@ class Music(commands.Cog):
         NEW_FFMPEG_OPTIONS["before_options"] += " -ss {}".format(time)
         
         voice_client.pause()
-        self.play_with_info(ctx, guildInfo.currentSongInfo, NEW_FFMPEG_OPTIONS)
+        self.play_with_info(ctx, musicInfo.currentSongInfo, NEW_FFMPEG_OPTIONS)
         await ctx.send("seeked {}".format(time))
         
     
@@ -232,17 +202,17 @@ class Music(commands.Cog):
         
     
     def play_next(self, ctx):
-        guildInfo = self.get_guild_info(ctx)
+        musicInfo = self.get_music_info(ctx.guild.id)
         
-        if not (guildInfo.isLooping and guildInfo.currentSongInfo):
-            if len(guildInfo.songInfoQueue) == 0:
-                guildInfo.clear_current_song_info()
+        if not (musicInfo.isLooping and musicInfo.currentSongInfo):
+            if len(musicInfo.songInfoQueue) == 0:
+                musicInfo.clear_current_song_info()
                 return
             else:
-                guildInfo.currentSongInfo = guildInfo.songInfoQueue.pop(0)
+                musicInfo.currentSongInfo = musicInfo.songInfoQueue.pop(0)
             
         self.bot.loop.create_task(self.nowPlaying(ctx))
-        self.play_with_info(ctx, guildInfo.currentSongInfo, self.FFMPEG_OPTIONS)
+        self.play_with_info(ctx, musicInfo.currentSongInfo, self.FFMPEG_OPTIONS)
         
     
     def get_video_info(self, *args):
@@ -277,32 +247,8 @@ class Music(commands.Cog):
         return discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
     
     
-    def get_guild_info(self, ctx):
-        return self.guildInfoDictionary[ctx.guild.id]
-    
-    
-class guildInfo:
-    def __init__(self):
-        self.songInfoQueue = []
-        self.currentSongInfo = {}
-        self.isLooping = False
-        
-        
-    def clear_queue(self):
-        self.songInfoQueue.clear()
-        
-        
-    def clear_current_song_info(self):
-        self.currentSongInfo = {}
-        
-        
-    def clear_all(self):
-        self.songInfoQueue.clear()
-        self.currentSongInfo = {}
-        
-        
-    def loop(self):
-        self.isLooping = not self.isLooping
+    def get_music_info(self, id):
+        return self.bot.get_cog("Guild").get_guild_info(id).musicInfo
         
         
 
