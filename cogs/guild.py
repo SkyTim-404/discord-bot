@@ -57,6 +57,19 @@ class MusicInfo:
         self.songInfoQueue.append(songInfo)
         
         
+    def get_current_song_info(self):
+        return self.currentSongInfo
+    
+
+    def get_all_song_info_message(self):
+        message = ""
+        i = 0
+        for songInfo in self.songInfoQueue:
+            i += 1
+            message += str(i) + ". " + songInfo["title"] + "\n"
+        return message
+        
+        
         
 def setup(bot):
     bot.add_cog(Guild(bot))

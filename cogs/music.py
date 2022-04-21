@@ -120,13 +120,7 @@ class Music(commands.Cog):
             
     @commands.command(aliases = ["q"])
     async def queue(self, ctx):
-        message = ""
-        i = 0
-        musicInfo = self.get_music_info(ctx.guild.id)
-        for songInfo in musicInfo.songInfoQueue:
-            i += 1
-            message += str(i) + ". " + songInfo["title"] + "\n"
-            
+        message = self.get_music_info(ctx.guild.id).get_all_song_info_message()
         if message == "":
             await ctx.send("No music in queue")
         else:
@@ -136,8 +130,8 @@ class Music(commands.Cog):
     @commands.command(aliases = ["np", "currentSong", "cs", "playing"])
     async def nowPlaying(self, ctx):
         try:
-            musicInfo = self.get_music_info(ctx.guild.id)
-            await ctx.send("Now playing " + musicInfo.currentSongInfo["title"])
+            currentSongInfo = self.get_music_info(ctx.guild.id).get_current_song_info()
+            await ctx.send(f"Now playing {currentSongInfo['title']}")
         except:
             await ctx.send("Bot is not playing anything")
         
@@ -177,8 +171,8 @@ class Music(commands.Cog):
                 await ctx.send("invalid input")
                 return
             
-        musicInfo = self.get_music_info(ctx.guild.id)
-        videoDuration = musicInfo.currentSongInfo["duration"]
+        currentSongInfo = self.get_music_info(ctx.guild.id).get_current_song_info()
+        videoDuration = currentSongInfo["duration"]
         inputTimeSeconds = (timeObj-datetime.datetime(1900, 1, 1)).total_seconds()
         
         if inputTimeSeconds > videoDuration:
@@ -189,7 +183,7 @@ class Music(commands.Cog):
         NEW_FFMPEG_OPTIONS["before_options"] += " -ss {}".format(time)
         
         voice_client.pause()
-        self.play_with_info(ctx, musicInfo.currentSongInfo, NEW_FFMPEG_OPTIONS)
+        self.play_with_info(ctx, currentSongInfo, NEW_FFMPEG_OPTIONS)
         await ctx.send("seeked {}".format(time))
         
     
