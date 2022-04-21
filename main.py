@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Variable
-token = os.getenv("ALLEN_WOKER_TOKEN")
+token = os.getenv("TOKEN")
 prefix = ["+"]
 cogs = [music]
 
