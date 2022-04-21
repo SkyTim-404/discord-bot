@@ -1,7 +1,7 @@
 from clients.bot import DiscordBot
 import cogs.channel as channel
 import cogs.music as music
-import cogs.guild as guild
+import cogs.guildManager as guildManager
 import cogs.help as help
 
 import os
@@ -11,7 +11,7 @@ load_dotenv()
 # Variable
 token = os.getenv("TOKEN")
 prefix = ["lun ", "lun"]
-cogs = [guild, channel, music, help]
+cogs = [guildManager, channel, music, help]
 
 def main():
     bot = DiscordBot(command_prefix = prefix, help_command=None)

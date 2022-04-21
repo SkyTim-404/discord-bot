@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-class Guild(commands.Cog):
+class GuildManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.guildInfos = {} # {guild id: guildInfo}
