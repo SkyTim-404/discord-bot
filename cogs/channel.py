@@ -19,7 +19,7 @@ class Channel(commands.Cog):
             
     @commands.command(aliases = ["dc", "leave"])
     async def disconnect(self, ctx):
-        self.bot.get_cog("Guild").get_guild_info(ctx.guild.id).clear_music_info()
+        self.bot.get_cog("GuildManager").get_guild_info(ctx.guild.id).clear_music_info()
         if ctx.voice_client is None:
             await ctx.send("Bot is not in a voice channel")
             return

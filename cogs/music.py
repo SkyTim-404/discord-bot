@@ -3,6 +3,7 @@ from discord.ext import commands
 from youtube_dl import YoutubeDL
 import validators
 import datetime
+import re
 
 class Music(commands.Cog):
     
@@ -33,13 +34,13 @@ class Music(commands.Cog):
         
     
     @commands.command(aliases = ["p"])
-    async def play(self, ctx, *args):
+    async def play(self, ctx, *, args=None):
         if ctx.author.voice is None:
             await ctx.send("You are not in a voice channel")
             return
-        info = self.get_video_info(*args)
+        info = self.get_video_info(args)
         if info is None:
-            await ctx.send("This is not a youtube video link")
+            await ctx.send("This is not a valid link")
             return
         musicInfo = self.get_music_info(ctx.guild.id)
         musicInfo.add_song_info(info)
@@ -209,16 +210,15 @@ class Music(commands.Cog):
         self.play_with_info(ctx, musicInfo.currentSongInfo, self.FFMPEG_OPTIONS)
         
     
-    def get_video_info(self, *args):
+    def get_video_info(self, args):
         try:
             info = None
-            if validators.url(args[0]):
-                if not "v=" in args[0]:
-                    return None
-                info = self.get_video_info_from_url(args[0])
+            if validators.url(args):
+                if args.startswith("https://www.youtube.com/watch?v=") or args.startswith("https://youtu.be/"):
+                    info = self.get_video_info_from_url(args)
             else:
-                keyword = " ".join(args)
-                info = self.get_video_info_from_keyword(keyword)
+                # args = re.sub(r'[^\w]', ' ', args)
+                info = self.get_video_info_from_keyword(args)
             return info
         except:
             return None
@@ -242,7 +242,7 @@ class Music(commands.Cog):
     
     
     def get_music_info(self, id):
-        return self.bot.get_cog("Guild").get_guild_info(id).musicInfo
+        return self.bot.get_cog("GuildManager").get_guild_info(id).musicInfo
         
         
 

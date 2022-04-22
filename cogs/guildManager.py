@@ -72,4 +72,4 @@ class MusicInfo:
         
         
 def setup(bot):
-    bot.add_cog(Guild(bot))
+    bot.add_cog(GuildManager(bot))
