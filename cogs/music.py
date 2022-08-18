@@ -191,6 +191,9 @@ class Music(commands.Cog):
     def play_with_info(self, ctx, info, FFMPEG_OPTIONS):
         voice_client = self.get_voice_client(ctx)
         
+        if voice_client is None:
+            return
+        
         url = info["url"]
         
         voice_client.play(discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS), after=lambda e: self.play_next(ctx))
