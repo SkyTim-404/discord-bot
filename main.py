@@ -10,7 +10,7 @@ load_dotenv()
 
 # Variable
 token = os.getenv("TOKEN")
-prefix = ["+", "-", "?", ";;", ".", "!", ";", "lun ", "lun"]
+prefix = ["+", "-", "?", ";;", ".", "!", ";"]
 cogs = [guildManager, channel, music, help]
 
 def main():
